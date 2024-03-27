@@ -15,33 +15,28 @@ class SimulationViewController: UIViewController {
     @IBOutlet weak var collectionView: UICollectionView!
     private var headerView: HeaderView!
     
-    var groupSize: Int = 25
+    var groupSize: Int = 0
     var infectionFactor: Int = 0
     var peroidUpdating : Int = 0
     
     private var people: [Person] = []
     private var numberOfColumns: Int = 5
-
+    
+    private var totalInfectedIndexPaths:  Set<IndexPath> = []
     private var infectedIndexPaths: Set<IndexPath> = [] //
-    var newInfectedIndexPaths: Set<IndexPath> = []
-    var nextRoundInfected: Set<IndexPath> = []
+    private var newInfectedIndexPaths: Set<IndexPath> = []
+    private var nextRoundInfected: Set<IndexPath> = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         configureProperties()
-        
-        let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinchGesture(_:)))
-        collectionView.addGestureRecognizer(pinchGesture)
-        
-        
+        configureGesture()
         
         configureBackButton()
         configureHeaderView()
         configureCollectionView(with: collectionView)
         
-        
-        collectionView.isScrollEnabled = true
         self.view.backgroundColor = .systemGray6
         
         if  peroidUpdating > 0 {
@@ -49,28 +44,32 @@ class SimulationViewController: UIViewController {
         }
     }
     
+    func configureGesture(){
+        let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinchGesture(_:)))
+        collectionView.addGestureRecognizer(pinchGesture)
+    }
+    
     func configureProperties(){
         if groupSize > 0 {
             people = Array(repeating: Person(isInfected: false), count: groupSize)
-//            numberOfColumns = Int(ceil(sqrt(Double(groupSize))))
-
+            //            numberOfColumns = Int(ceil(sqrt(Double(groupSize))))
         }
         
     }
     
     @objc func recountOfPatients(){
-        infectPeople(infectionRate: 0.5)
+        infectPeople()
+        let infectedCount = totalInfectedIndexPaths.count
+        let healtyCount = people.count - infectedCount
+        updateHeader(withHealtyCount: healtyCount, withInfectedCount: infectedCount)
     }
     
     func configureCollectionViewLayout(){
-        
         let layout = UICollectionViewFlowLayout()
         let padding: CGFloat = 10
         layout.sectionInset = UIEdgeInsets(top: padding, left: padding, bottom: padding, right: padding)
-        
         layout.minimumLineSpacing = 0
         layout.minimumInteritemSpacing = 0
-        
         collectionView.collectionViewLayout = layout
         
     }
@@ -80,15 +79,12 @@ class SimulationViewController: UIViewController {
         
         switch gesture.state {
         case .began, .changed:
-            // Масштабируем размер ячеек в зависимости от масштаба жеста
             let scale = gesture.scale
             let newCellSize = CGSize(width: layout.itemSize.width * scale, height: layout.itemSize.height * scale)
             
-            // Ограничиваем размер ячеек, чтобы они не были слишком маленькими или слишком большими
             layout.itemSize = newCellSize.clamped(min: CGSize(width: 50, height: 50), max: CGSize(width: 200, height: 200))
             layout.invalidateLayout()
-            
-            gesture.scale = 1.0 // Сбрасываем масштаб, чтобы масштабирование было плавным
+            gesture.scale = 1.0
         default:
             break
         }
@@ -97,8 +93,13 @@ class SimulationViewController: UIViewController {
     
     func configureHeaderView(){
         headerView = HeaderView(frame: CGRect(x: 0, y: 0, width: self.view.frame.width, height: 100))
+        updateHeader(withHealtyCount: people.count, withInfectedCount: 0)
         view.addSubview(headerView)
         setupConstraints(for: headerView)
+    }
+    
+    private func updateHeader(withHealtyCount: Int, withInfectedCount: Int){
+        headerView.configure(withHealtyCount: withHealtyCount, withInfectedCount: withInfectedCount)
     }
     
     private func setupConstraints(for headerView: HeaderView) {
@@ -112,6 +113,7 @@ class SimulationViewController: UIViewController {
         collectionView.delegate = self
         collectionView.dataSource = self
         collectionView.backgroundColor = .clear
+        collectionView.isScrollEnabled = true
         setupConstraints(for: collectionView)
         configureCollectionViewLayout()
     }
@@ -135,38 +137,29 @@ class SimulationViewController: UIViewController {
 
 extension SimulationViewController {
     
-    func infectPeople(infectionRate: Double) {
-        //            var infectedIndexPaths: [IndexPath] = [IndexPath(item: initialInfectedIndex, section: 0)]
+    func infectPeople() {
         newInfectedIndexPaths = []
-        
-        
         nextRoundInfected = []
-        let dispatchGroup = DispatchGroup()
         
-        // Создаем потокобезопасную структуру для хранения состояний
+        let dispatchGroup = DispatchGroup()
         let infectionQueue = DispatchQueue(label: "com.VirusSpread.infectionQueue", attributes: .concurrent)
         
         for indexPath in infectedIndexPaths {
-            
-            
             dispatchGroup.enter()
-            
+        
             infectionQueue.async {
-                
-                self.processInfection(for: indexPath, infectionRate: infectionRate, infectionQueue: infectionQueue, dispatchGroup: dispatchGroup)
-                
+                self.processInfection(for: indexPath, infectionQueue: infectionQueue, dispatchGroup: dispatchGroup)
+
                 dispatchGroup.leave()
             }
         }
         
         dispatchGroup.wait()
         
-        // Обновляем список зараженных для следующего раунда
         let allNextRoundInfected = nextRoundInfected.union(newInfectedIndexPaths)
         infectedIndexPaths = allNextRoundInfected
-        print(infectedIndexPaths)
-        
-        // Передаем управление в главный поток для обновления UI один раз после обработки всех инфекций
+        totalInfectedIndexPaths.formUnion(infectedIndexPaths)
+       
         DispatchQueue.main.async { [weak self] in
             self?.updateCollectionView(newInfectedIndexPaths: self?.newInfectedIndexPaths ?? [])
             self?.newInfectedIndexPaths.removeAll()
@@ -175,13 +168,12 @@ extension SimulationViewController {
     }
     
     private func updateCollectionView(newInfectedIndexPaths: Set<IndexPath>){
-        
         self.collectionView.performBatchUpdates({
             self.collectionView.reloadItems(at: Array(newInfectedIndexPaths))
         }, completion: nil)
     }
     
-    private func processInfection(for indexPath: IndexPath, infectionRate: Double, infectionQueue: DispatchQueue, dispatchGroup: DispatchGroup)  {
+    private func processInfection(for indexPath: IndexPath, infectionQueue: DispatchQueue, dispatchGroup: DispatchGroup)  {
         dispatchGroup.enter()
         
         let index = indexPath.item
@@ -206,13 +198,6 @@ extension SimulationViewController {
         } else {
             newInfectedArray = [Int](existNeighbors.shuffled().prefix(self.infectionFactor))
         }
-         
-//        newInfectedArray.forEach{ infected in
-//            if !people[infected].isInfected {
-//                localNewInfected.insert(IndexPath(item: infected, section: 0))
-//                people[infected].isInfected = true
-//            }
-//        }
         
         existNeighbors.forEach { neighborIndex in
             if !people[neighborIndex].isInfected{
@@ -225,9 +210,6 @@ extension SimulationViewController {
                 localNextRound.insert(indexPath)
             }
         }
-        
-        print((allNeighborsInfected))
-        // Используем барьер для безопасного обновления общих данных
         infectionQueue.async(flags: .barrier) {
             
             newInfectedArray.forEach{ infected in
@@ -266,6 +248,9 @@ extension SimulationViewController: UICollectionViewDataSource {
         infectedIndexPaths.insert(indexPath)
         if let cell = collectionView.cellForItem(at: indexPath) as? HumanCollectionViewCell {
             cell.configure(with: true)
+            let infectedCount = totalInfectedIndexPaths.count
+            let healtyCount = people.count - infectedCount
+            updateHeader(withHealtyCount: healtyCount, withInfectedCount: infectedCount)
         }
         
     }
@@ -276,9 +261,9 @@ extension SimulationViewController: UICollectionViewDataSource {
 extension SimulationViewController: UICollectionViewDelegate, UICollectionViewDelegateFlowLayout  {
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        var size: CGFloat = (collectionView.frame.width - 20) / CGFloat(numberOfColumns)
-            return CGSize(width: size, height: size)
-        }
+        let size: CGFloat = (collectionView.frame.width - 20) / CGFloat(numberOfColumns)
+        return CGSize(width: size, height: size)
+    }
     
     
 }
