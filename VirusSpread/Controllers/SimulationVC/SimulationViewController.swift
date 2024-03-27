@@ -15,12 +15,12 @@ class SimulationViewController: UIViewController {
     @IBOutlet weak var collectionView: UICollectionView!
     private var headerView: HeaderView!
     
-    var groupSize: Int = 0
+    var groupSize: Int = 25
     var infectionFactor: Int = 0
     var peroidUpdating : Int = 0
     
     private var people: [Person] = []
-    private var numberOfColumns: Int = 0
+    private var numberOfColumns: Int = 5
 
     private var infectedIndexPaths: Set<IndexPath> = [] //
     var newInfectedIndexPaths: Set<IndexPath> = []
@@ -39,7 +39,10 @@ class SimulationViewController: UIViewController {
         configureBackButton()
         configureHeaderView()
         configureCollectionView(with: collectionView)
-        configureCollectionViewLayout()
+        
+        
+        collectionView.isScrollEnabled = true
+        self.view.backgroundColor = .systemGray6
         
         if  peroidUpdating > 0 {
             Timer.scheduledTimer(timeInterval: TimeInterval(peroidUpdating), target: self, selector: #selector(recountOfPatients), userInfo: nil, repeats: true)
@@ -49,7 +52,8 @@ class SimulationViewController: UIViewController {
     func configureProperties(){
         if groupSize > 0 {
             people = Array(repeating: Person(isInfected: false), count: groupSize)
-            numberOfColumns = Int(ceil(sqrt(Double(groupSize))))
+//            numberOfColumns = Int(ceil(sqrt(Double(groupSize))))
+
         }
         
     }
@@ -61,17 +65,11 @@ class SimulationViewController: UIViewController {
     func configureCollectionViewLayout(){
         
         let layout = UICollectionViewFlowLayout()
-        let padding: CGFloat = 10 // Отступы между ячейками и краями экрана
-        let minimumItemSpacing: CGFloat = 10 // Минимальное расстояние между ячейками
-        let numberOfColumns: CGFloat = CGFloat(self.numberOfColumns) // Желаемое количество столбцов
-        
-        let availableWidth = collectionView.frame.width - padding * 2 - minimumItemSpacing * (numberOfColumns - 1)
-        let itemWidth = availableWidth / numberOfColumns
-        
-        layout.itemSize = CGSize(width: itemWidth, height: itemWidth) // Здесь вы можете настроить высоту, если нужно другое соотношение
+        let padding: CGFloat = 10
         layout.sectionInset = UIEdgeInsets(top: padding, left: padding, bottom: padding, right: padding)
-        layout.minimumInteritemSpacing = minimumItemSpacing
-        layout.minimumLineSpacing = minimumItemSpacing // Расстояние между строками
+        
+        layout.minimumLineSpacing = 0
+        layout.minimumInteritemSpacing = 0
         
         collectionView.collectionViewLayout = layout
         
@@ -113,7 +111,9 @@ class SimulationViewController: UIViewController {
         collectionView.register(UINib(nibName: "\(HumanCollectionViewCell.self)", bundle: nil), forCellWithReuseIdentifier: "\(HumanCollectionViewCell.self)")
         collectionView.delegate = self
         collectionView.dataSource = self
+        collectionView.backgroundColor = .clear
         setupConstraints(for: collectionView)
+        configureCollectionViewLayout()
     }
     
     private func setupConstraints(for collectionView: UICollectionView) {
@@ -273,7 +273,13 @@ extension SimulationViewController: UICollectionViewDataSource {
     
 }
 //MARK: - UICollectionViewDelegate
-extension SimulationViewController: UICollectionViewDelegate  {
+extension SimulationViewController: UICollectionViewDelegate, UICollectionViewDelegateFlowLayout  {
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        var size: CGFloat = (collectionView.frame.width - 20) / CGFloat(numberOfColumns)
+            return CGSize(width: size, height: size)
+        }
+    
     
 }
 

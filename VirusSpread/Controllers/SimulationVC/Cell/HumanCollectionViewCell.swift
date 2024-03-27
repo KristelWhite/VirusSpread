@@ -11,19 +11,23 @@ class HumanCollectionViewCell: UICollectionViewCell {
 
     @IBOutlet weak var label: UILabel!
     
+    @IBOutlet weak var view: UIView!
+    
     override func awakeFromNib() {
         super.awakeFromNib()
-        // Initialization code
+        label.textAlignment = .center
+        label.font = .systemFont(ofSize: 50)
     }
     
     func configure(with isInfected: Bool) {
         if isInfected {
-            label.text = "Заражен"
-            label.backgroundColor = .red
+            label.text = "😷"
+            view.backgroundColor = UIColor(red: 255/255, green: 64/255, blue: 64/255, alpha: 0.7)
         }
+
         else {
-            label.text = "Здоров"
-            label.backgroundColor = .clear
+            label.text = "😜"
+            view.backgroundColor = .clear
         }
     }
 }

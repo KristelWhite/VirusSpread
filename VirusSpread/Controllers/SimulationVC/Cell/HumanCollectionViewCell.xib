@@ -21,7 +21,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
                         <subviews>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="GpX-op-JYC">
-                                <rect key="frame" x="4" y="14.666666666666664" width="42" height="21"/>
+                                <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
@@ -29,8 +29,12 @@
                         </subviews>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
+                            <constraint firstItem="GpX-op-JYC" firstAttribute="top" secondItem="wzQ-sC-Xx6" secondAttribute="top" id="5sV-HT-RMe"/>
+                            <constraint firstItem="GpX-op-JYC" firstAttribute="leading" secondItem="wzQ-sC-Xx6" secondAttribute="leading" id="9sY-6Y-Srh"/>
                             <constraint firstItem="GpX-op-JYC" firstAttribute="centerY" secondItem="wzQ-sC-Xx6" secondAttribute="centerY" id="Ka7-PA-6Xy"/>
+                            <constraint firstAttribute="bottom" secondItem="GpX-op-JYC" secondAttribute="bottom" id="TMu-2P-b8L"/>
                             <constraint firstItem="GpX-op-JYC" firstAttribute="centerX" secondItem="wzQ-sC-Xx6" secondAttribute="centerX" id="cqZ-sf-i7v"/>
+                            <constraint firstAttribute="trailing" secondItem="GpX-op-JYC" secondAttribute="trailing" id="r7f-Xt-HkN"/>
                         </constraints>
                     </view>
                 </subviews>
@@ -44,6 +48,7 @@
             </constraints>
             <connections>
                 <outlet property="label" destination="GpX-op-JYC" id="ZgK-uo-uv8"/>
+                <outlet property="view" destination="wzQ-sC-Xx6" id="NGk-YE-vAM"/>
             </connections>
             <point key="canvasLocation" x="100.76335877862596" y="19.718309859154932"/>
         </collectionViewCell>
